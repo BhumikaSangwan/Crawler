@@ -80,7 +80,6 @@ void LinkedList<T, K> :: append(T data, K key)
 }
 
 template <typename T, typename K>
-
 void LinkedList<T, K> :: removeFromIndex(int index)
 {
     Node<T, K>* tempNode = nullptr;
@@ -125,9 +124,16 @@ template <typename T, typename K>
 void LinkedList<T, K>::print()
 {
     Node<T, K>* node = head;
+    int len = 0;
     while (node != nullptr)
     {
-        std::cout << "(" << node->data << ", " << node->key << ")" << " -> ";
-        node = node->next;
+        std::cout << node->data << ", " ;
+        if(node->key != nullptr) 
+            std::cout << node->key ;
+        else
+            std::cout << "NULL";
+        std::cout << std::endl ;
+        node = node->next ;
+        len++;
     }
 }
