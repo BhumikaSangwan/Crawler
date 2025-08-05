@@ -2,6 +2,19 @@
     "files.associations": {
         "iosfwd": "cpp",
         "*.tpp": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "filesystem": "cpp",
+        "system_error": "cpp",
+        "vector": "cpp",
+        "xlocbuf": "cpp",
+        "xlocmon": "cpp",
+        "xloctime": "cpp",
+        "xstring": "cpp",
+        "algorithm": "cpp",
+        "forward_list": "cpp",
+        "iomanip": "cpp",
+        "istream": "cpp",
+        "iterator": "cpp",
+        "xlocnum": "cpp"
     }
 }

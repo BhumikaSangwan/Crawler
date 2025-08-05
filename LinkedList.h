@@ -22,6 +22,8 @@ class LinkedList {
         void removeFromIndex(int index);
         void pop();
         void print();
+        void deleteKey(K key);
+        Node<T, K>* search(K key);
 
 };
 

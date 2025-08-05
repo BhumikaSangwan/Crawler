@@ -1,12 +1,13 @@
 #include <iostream>
 #include <type_traits>
 #include "Hash.h"
+#include "StringFn.h"
 using namespace std;
 
 template <typename K, typename T>
 Hash<K, T>::Hash()
 {
-    size = 5;
+    size = 10;
     insertedCount = 0;
     allowResize = true;
     threshold = static_cast<int>(0.75 * size);
@@ -81,17 +82,28 @@ void Hash<K, T>::resizeTable()
             while (currNode != nullptr)
             {
                 int idx = getHashIdx(currNode->key);
-
-                Node<K, T> *nextNode = newTable[idx];
-                newTable[idx] = currNode;
-                newTable[idx]->next = nextNode;
+                insert(currNode->key, currNode->data);
+                // Node<K, T> *nextNode = newTable[idx];
+                // newTable[idx] = currNode;
+                // newTable[idx]->next = nextNode;
 
                 currNode = currNode->next;
             }
         }
     }
 
+    for (int i = 0; i < prevSize; i++)
+    {
+        Node<K, T>* curr = prevTable[i];
+        while (curr != nullptr)
+        {
+            Node<K, T>* next = curr->next;
+            delete curr;
+            curr = next;
+        }
+    }
     delete[] prevTable;
+    // deallocateTable();
 }
 
 template <typename K, typename T>
@@ -111,19 +123,22 @@ void Hash<K, T>::deallocateTable()
     table = nullptr;
 }
 
-template <typename K, typename T> 
-int Hash<K, T> :: getHashIdx(int val) {
+template <typename K, typename T>
+int Hash<K, T>::getHashIdx(int val)
+{
     return (val % size + size) % size;
 }
 
 template <typename K, typename T>
-int Hash<K, T> :: getHashIdx(float val) {
+int Hash<K, T>::getHashIdx(float val)
+{
     int idx = static_cast<int>(val);
     return (idx % size + size) % size;
 }
 
-template <typename K, typename T> 
-int Hash<K, T> :: getHashIdx(char* val) {
+template <typename K, typename T>
+int Hash<K, T>::getHashIdx(char *val)
+{
     int idx = 0;
     for (int i = 0; val[i] != '\0'; i++)
     {
@@ -133,8 +148,9 @@ int Hash<K, T> :: getHashIdx(char* val) {
     return finalIdx;
 }
 
-template <typename K, typename T> 
-int Hash<K, T> :: getHashIdx(std::string val) {
+template <typename K, typename T>
+int Hash<K, T>::getHashIdx(std::string val)
+{
     int idx = 0;
     for (size_t i = 0; i < val.length(); i++)
     {
@@ -147,8 +163,6 @@ int Hash<K, T> :: getHashIdx(std::string val) {
 template <typename K, typename T>
 void Hash<K, T>::insert(K key, T val)
 {
-    if (search(key) != nullptr)
-        return;
     int idx = getHashIdx(key);
 
     if (table[idx] == nullptr)
@@ -157,10 +171,20 @@ void Hash<K, T>::insert(K key, T val)
     }
     else
     {
+        Node<K, T> *curr = table[idx];
+        while (curr != nullptr)
+        {
+            if (curr->key == key)
+            {
+                return;
+            }
+            curr = curr->next;
+        }
         Node<K, T> *newNode = new Node<K, T>(key, val);
         newNode->next = table[idx];
         table[idx] = newNode;
     }
+
     insertedCount++;
     if (allowResize && insertedCount > threshold)
     {
@@ -206,24 +230,66 @@ void Hash<K, T>::remove(K key)
 }
 
 template <typename K, typename T>
-Node<K, T> *Hash<K, T>::search(K key)
+Node<K, T>* Hash<K, T>::search(K key)
 {
     int idx = getHashIdx(key);
+    cout << "Searching for key at index " << idx << ": " << key << endl;
 
-    if (table[idx] == nullptr)
+    Node<K, T>* currNode = table[idx];
+    while (currNode != nullptr)
     {
-        return nullptr;
-    }
-    else
-    {
-        Node<K, T> *currNode = table[idx];
-        while (currNode != nullptr && currNode->key != key)
+        if constexpr (std::is_same<K, char*>::value)
         {
-            currNode = currNode->next;
+            if (my_strcmp(currNode->key, key) == 0)
+            {
+                cout << "Key exists (char*): " << key << endl;
+                return currNode;
+            }
         }
-        return currNode;
+        else
+        {
+            if (currNode->key == key)
+            {
+                cout << "Key exists: " << key << endl;
+                return currNode;
+            }
+        }
+        currNode = currNode->next;
     }
+
+    cout << "Key not found: " << key << endl;
+    return nullptr;
 }
+
+
+// template <typename K, typename T>
+// Node<K, T> *Hash<K, T>::search(K key)
+// {
+//     int idx = getHashIdx(key);
+//     cout << "searching for key: " << key << endl;
+
+//     if (table[idx] == nullptr)
+//     {
+//         cout << "not present at idx : " << idx << endl;
+//         return nullptr;
+//     }
+//     else
+//     {
+//         Node<K, T> *currNode = table[idx];
+//         cout << "Keys at idx : " << idx << " are: ";
+//         while (currNode != nullptr && my_strcmp(currNode->key, key) != 0)
+//         {
+//             cout << currNode->key << " -> ";
+//             currNode = currNode->next;
+//         }
+//         if (currNode != nullptr)
+//         {
+//             cout << endl
+//                  << "-----------key exists : " << key << endl;
+//         }
+//         return currNode;
+//     }
+// }
 
 template <typename K, typename T>
 void Hash<K, T>::display()
