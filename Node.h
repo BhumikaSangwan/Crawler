@@ -8,7 +8,7 @@ class Node {
     K key;
     Node<T, K>* next;
 
-    Node(T val, K key) : data(val), key(key), next(nullptr) {}
+    Node(K key, T val) : data(val), key(key), next(nullptr) {}
 };
 
 #endif

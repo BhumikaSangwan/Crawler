@@ -80,6 +80,7 @@ void LinkedList<T, K>::append(T data, K key)
         tail->next = node;
         tail = tail->next;
     }
+    tail->next = nullptr;
 }
 
 template <typename T, typename K>
@@ -155,7 +156,6 @@ template <typename T, typename K>
 void LinkedList<T, K>::print()
 {
     Node<T, K> *node = head;
-    int len = 0;
     while (node != nullptr)
     {
         std::cout << node->data << ", ";

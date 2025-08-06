@@ -12,7 +12,9 @@ int main(int argc, char* argv[]) {
     }
     Crawler cr1(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]));
     cr1.crawl(argv[1], 1); // url, depth, currDepth
-    cout << "Urls : " << endl;
+    cout << "\nHash : " << endl;
+    cr1.printHashedUrls();
+    cout << "\nUrls : " << endl;
     cr1.printUrls();
 
     return 0;

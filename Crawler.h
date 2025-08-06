@@ -20,14 +20,18 @@ class Crawler {
         Crawler(const Crawler& cr);
         ~Crawler();
 
+
         void generateFileName(char* filename, int len);
         void insertUrl(char* url, char* filepath);
+        void getUrl(char* url, int len, int currDepth, char* parentUrl);
         void hashUrl(char* url, char* filepath);
         void checkDir();
+        bool isHtml(char* url);
         int isValidUrl(char* url);
-        void crawl(char* url, int currDepth);
-        void extractUrls(char* filename, int depth, int currDepth = 1);  
+        void extractUrls(char* filename, int currDepth, char* parentUrl );  
         void printUrls();
+        void printHashedUrls();
+        void crawl(char* url, int currDepth);
 };
 
 #endif

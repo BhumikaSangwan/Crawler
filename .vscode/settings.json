@@ -15,6 +15,7 @@
         "iomanip": "cpp",
         "istream": "cpp",
         "iterator": "cpp",
-        "xlocnum": "cpp"
+        "xlocnum": "cpp",
+        "xlocale": "cpp"
     }
 }

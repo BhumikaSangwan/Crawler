@@ -9,7 +9,7 @@
 using namespace std;
 namespace fs = filesystem;
 
-Crawler :: Crawler()
+Crawler ::Crawler()
 {
     url = nullptr;
     targetDir = nullptr;
@@ -18,9 +18,9 @@ Crawler :: Crawler()
     urlList = nullptr;
     linkCount = 20;
     currLinkCount = 0;
-    urlHash = new Hash<char*, char*>;
+    urlHash = new Hash<char *, char *>;
 }
-Crawler :: Crawler(char *url, char *targetDir, int depth = 5, int linkCount = 20)
+Crawler ::Crawler(char *url, char *targetDir, int depth = 5, int linkCount = 20)
 {
     this->url = url;
     this->targetDir = targetDir;
@@ -29,10 +29,10 @@ Crawler :: Crawler(char *url, char *targetDir, int depth = 5, int linkCount = 20
     this->linkCount = linkCount;
     currLinkCount = 0;
     urlList = nullptr;
-    urlHash = new Hash<char*, char*>;
+    urlHash = new Hash<char *, char *>;
 }
 
-Crawler :: Crawler(const Crawler& cr)
+Crawler ::Crawler(const Crawler &cr)
 {
     this->url = cr.url;
     this->targetDir = cr.targetDir;
@@ -46,15 +46,15 @@ Crawler :: Crawler(const Crawler& cr)
 
 Crawler ::~Crawler()
 {
-    delete[] url;
-    delete[] targetDir;
-    delete[] urlList;
-    delete[] urlHash;
+    delete url;
+    delete targetDir;
+    delete urlList;
+    delete urlHash;
 }
 
-void Crawler :: crawl(char *url, int currDepth = 1)
+void Crawler ::crawl(char *url, int currDepth = 1)
 {
-    if (depth == 0 || currDepth > depth || currLinkCount > linkCount)
+    if (depth == 0 || currDepth > depth || currLinkCount >= linkCount)
     {
         return;
     }
@@ -64,19 +64,29 @@ void Crawler :: crawl(char *url, int currDepth = 1)
         return;
     }
 
-    char filename[MAX_LEN];
-    filename[0] = '\0';
-    generateFileName(filename, 12 % 95);
+    if (!isHtml(url))
+    {
+        cout << "not a html file : " << url << endl;
+        return;
+    }
 
     if (urlHash->search(url) != nullptr)
     {
-        cout << "url already crawled : " << url << endl;
+        cout << "\nurl already crawled : " << url << endl;
         duplicateCount++;
         return;
     }
 
-    if (isValidUrl(url) == 0 )
+    char filename[MAX_LEN];
+    filename[0] = '\0';
+    generateFileName(filename, 12 % 95);
+
+    if (isValidUrl(url) == 0)
     {
+        cout << endl
+             << currLinkCount << " " << url << endl
+             << endl;
+        currLinkCount++;
         char filepath[MAX_LEN];
         filepath[0] = '\0';
         my_strcat(filepath, targetDir);
@@ -91,19 +101,17 @@ void Crawler :: crawl(char *url, int currDepth = 1)
         my_strcat(cmd, " -O ");
         my_strcat(cmd, filepath);
         system(cmd);
-        cout << endl << currLinkCount << " " << url << endl << endl;
-        currLinkCount++;
         hashUrl(url, filepath);
         insertUrl(url, filepath);
-        extractUrls(filepath, depth, currDepth );
+        extractUrls(filepath, currDepth, url);
     }
     else
     {
-        cout << "invalid url : " << url << endl;
+        cout << "invalid url : " << url ;
     }
 }
 
-void Crawler :: checkDir()
+void Crawler ::checkDir()
 {
     if (!fs::exists(targetDir))
     {
@@ -119,7 +127,7 @@ void Crawler :: checkDir()
     }
 }
 
-void Crawler :: generateFileName(char *filename, int len)
+void Crawler ::generateFileName(char *filename, int len)
 {
     const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     filename[0] = '\0';
@@ -133,7 +141,7 @@ void Crawler :: generateFileName(char *filename, int len)
     my_strcat(filename, ".html");
 }
 
-int Crawler :: isValidUrl(char *url)
+int Crawler ::isValidUrl(char *url)
 {
     char validityCmd[MAX_LEN];
     validityCmd[0] = '\0';
@@ -143,7 +151,7 @@ int Crawler :: isValidUrl(char *url)
     return result;
 }
 
-void Crawler :: extractUrls(char *filepath, int depth, int currDepth)
+void Crawler ::extractUrls(char *filepath, int currDepth, char *parentUrl)
 {
     char *buffer = readFile(filepath);
 
@@ -154,7 +162,7 @@ void Crawler :: extractUrls(char *filepath, int depth, int currDepth)
     }
     char *searchPos = buffer;
     char *ahref = nullptr;
-    while ((ahref = my_strcasestr(searchPos, "<a href=\"http")) != nullptr)
+    while ((ahref = my_strcasestr(searchPos, "<a href=\"")) != nullptr)
     {
         char *quoteStart = my_strstr(ahref, "\"");
         if (quoteStart == nullptr)
@@ -167,27 +175,79 @@ void Crawler :: extractUrls(char *filepath, int depth, int currDepth)
         int len = quoteEnd - quoteStart - 1;
         if (len > MAX_LEN)
             len = MAX_LEN - 1;
-        char url[MAX_LEN];
-        int i = 0;
-        while (i < len)
+        if (len == 1)
         {
-            url[i] = quoteStart[i + 1];
-            i++;
+            searchPos = quoteEnd + 1;
+            continue;
         }
-        url[len] = '\0';
-
-        if(currDepth < depth){
-            crawl(url, currDepth + 1);
-        }
+        getUrl(quoteStart, len, currDepth, parentUrl);
 
         searchPos = quoteEnd + 1;
     }
     delete buffer;
 }
 
-void Crawler :: insertUrl(char *url, char *filepath)
+void Crawler :: getUrl (char* quoteStart, int len, int currDepth, char* parentUrl){
+    char url[MAX_LEN];
+        url[0] = '\0';
+        if (quoteStart[1] == '#')
+        {
+            return;
+        }
+        size_t i = 0;
+        size_t j = 0;
+        if (parentUrl != nullptr && quoteStart[1] == '/')
+        {
+            j = my_strlen(parentUrl);
+
+            while (i < j)
+            {
+                url[i] = parentUrl[i];
+                i++;
+            }
+            if (len + i > MAX_LEN)
+            {
+                len = MAX_LEN - i - 1;
+            }
+            size_t k = 0;
+            if (url[i - 1] == '/')
+            {
+                if (quoteStart[1] == '/')
+                {
+                    j--;
+                    k++;
+                }
+            }
+            cout << "\nrel url : ";
+            while (i < len + j)
+            {
+                cout << quoteStart[k + 1];
+                url[i] = quoteStart[k + 1];
+                i++;
+                k++;
+            }
+            cout << " , parentUrl : " << parentUrl ;
+            url[len + j] = '\0';
+        }
+        else
+        {
+            while (i < len)
+            {
+                url[i] = quoteStart[i + 1];
+                i++;
+            }
+            url[i] = '\0';
+        }
+
+        if (currDepth < depth - 1)
+        {
+            crawl(url, currDepth + 1);
+        }
+}
+
+void Crawler ::insertUrl(char *url, char *filepath)
 {
-    
+
     if (urlList == nullptr)
     {
         urlList = new LinkedList<char *, char *>();
@@ -199,7 +259,8 @@ void Crawler :: insertUrl(char *url, char *filepath)
     urlList->append(urlCopy, keyCopy);
 }
 
-void Crawler :: hashUrl(char *url, char* filepath) {
+void Crawler ::hashUrl(char *url, char *filepath)
+{
     char *urlCopy = new char[my_strlen(url) + 1];
     my_strcpy(urlCopy, url);
     char *fileCopy = new char[my_strlen(filepath) + 1];
@@ -207,7 +268,25 @@ void Crawler :: hashUrl(char *url, char* filepath) {
     urlHash->insert(urlCopy, fileCopy);
 }
 
-void Crawler :: printUrls()
+void Crawler ::printUrls()
 {
     urlList->print();
+}
+
+void Crawler ::printHashedUrls()
+{
+    urlHash->display();
+}
+
+bool Crawler ::isHtml(char *url)
+{
+    const char *extensions[] = {".jpeg", ".jpg", ".png", ".img", ".svg", ".mp4", ".mp3", ".css", ".js", ".gif"};
+    for (int i = 0; i < 10; i++)
+    {
+        if (my_strcasestr(url, extensions[i]) != nullptr)
+        {
+            return false;
+        }
+    }
+    return true;
 }

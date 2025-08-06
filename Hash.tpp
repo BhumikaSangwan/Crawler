@@ -233,7 +233,6 @@ template <typename K, typename T>
 Node<K, T>* Hash<K, T>::search(K key)
 {
     int idx = getHashIdx(key);
-    cout << "Searching for key at index " << idx << ": " << key << endl;
 
     Node<K, T>* currNode = table[idx];
     while (currNode != nullptr)
@@ -242,7 +241,6 @@ Node<K, T>* Hash<K, T>::search(K key)
         {
             if (my_strcmp(currNode->key, key) == 0)
             {
-                cout << "Key exists (char*): " << key << endl;
                 return currNode;
             }
         }
@@ -250,57 +248,34 @@ Node<K, T>* Hash<K, T>::search(K key)
         {
             if (currNode->key == key)
             {
-                cout << "Key exists: " << key << endl;
                 return currNode;
             }
         }
         currNode = currNode->next;
     }
 
-    cout << "Key not found: " << key << endl;
+    cout << endl << endl;
     return nullptr;
 }
 
-
-// template <typename K, typename T>
-// Node<K, T> *Hash<K, T>::search(K key)
-// {
-//     int idx = getHashIdx(key);
-//     cout << "searching for key: " << key << endl;
-
-//     if (table[idx] == nullptr)
-//     {
-//         cout << "not present at idx : " << idx << endl;
-//         return nullptr;
-//     }
-//     else
-//     {
-//         Node<K, T> *currNode = table[idx];
-//         cout << "Keys at idx : " << idx << " are: ";
-//         while (currNode != nullptr && my_strcmp(currNode->key, key) != 0)
-//         {
-//             cout << currNode->key << " -> ";
-//             currNode = currNode->next;
-//         }
-//         if (currNode != nullptr)
-//         {
-//             cout << endl
-//                  << "-----------key exists : " << key << endl;
-//         }
-//         return currNode;
-//     }
-// }
 
 template <typename K, typename T>
 void Hash<K, T>::display()
 {
     for (int i = 0; i < size; i++)
     {
-        Node<K, T> *currNode = table[i];
+        Node<K, T> *currNode = table[i]; 
         cout << i << " : ";
         while (currNode != nullptr)
         {
-            cout << currNode->data << " -> ";
+            cout << currNode->data << " , ";
+            if(currNode->key != nullptr) {
+                cout << currNode->key;
+            }
+            else {
+                cout << "NULL";
+            }
+            cout << endl;
             currNode = currNode->next;
         }
         cout << endl;
