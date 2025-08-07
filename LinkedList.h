@@ -23,6 +23,7 @@ class LinkedList {
         void pop();
         void print();
         void deleteKey(K key);
+        Node<T, K>* getHead();
         Node<T, K>* search(K key);
 
 };

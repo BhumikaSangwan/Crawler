@@ -193,6 +193,36 @@ void Hash<K, T>::insert(K key, T val)
 }
 
 template <typename K, typename T>
+int Hash<K, T> :: insert(K key) {
+    if(key == nullptr) {
+        return 0;
+    }
+    normalizeSpace(key);
+    if(key == nullptr) {
+        return 0;
+    }
+    int idx = getHashIdx(key);
+    if (table[idx] == nullptr) {
+        table[idx] = new Node<K, T>(key, 1);
+        return 1;
+    }
+    else {
+        Node<K, T>* curr = table[idx];
+        while (curr != nullptr) {
+            if (my_strcmp(curr->key, key) == 0) {
+                curr->data += 1;
+                return curr->data;
+            }
+            curr = curr->next;
+        }
+        Node<K, T>* newNode = new Node<K, T>(key, 1);
+        newNode->next = table[idx];
+        table[idx] = newNode;
+        return newNode->data;
+    }
+}
+
+template <typename K, typename T>
 void Hash<K, T>::remove(K key)
 {
     int idx = getHashIdx(key);
@@ -265,10 +295,10 @@ void Hash<K, T>::display()
     for (int i = 0; i < size; i++)
     {
         Node<K, T> *currNode = table[i]; 
-        cout << i << " : ";
+        cout << i << " : " << endl;
         while (currNode != nullptr)
         {
-            cout << currNode->data << " , ";
+            cout << currNode->data << " , key : ";
             if(currNode->key != nullptr) {
                 cout << currNode->key;
             }

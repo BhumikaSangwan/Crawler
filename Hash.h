@@ -24,6 +24,7 @@ class Hash {
         Hash(const Hash<K, T>& obj);
         ~Hash();
         void insert(K key, T val);
+        int insert(K key);
         void remove(K key);
         Node<K, T>* search(K key);
         void display();

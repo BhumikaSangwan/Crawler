@@ -16,6 +16,11 @@
         "istream": "cpp",
         "iterator": "cpp",
         "xlocnum": "cpp",
-        "xlocale": "cpp"
+        "xlocale": "cpp",
+        "chrono": "cpp",
+        "optional": "cpp",
+        "type_traits": "cpp",
+        "xtr1common": "cpp",
+        "xutility": "cpp"
     }
 }

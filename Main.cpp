@@ -16,6 +16,7 @@ int main(int argc, char* argv[]) {
     cr1.printHashedUrls();
     cout << "\nUrls : " << endl;
     cr1.printUrls();
+    cr1.findKeywords();
 
     return 0;
 }

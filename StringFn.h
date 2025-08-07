@@ -16,6 +16,7 @@ char* my_strchr(const char *s, int c);
 char* my_strstr(const char *haystack, const char *needle);
 char* my_strtok(char *str, const char *delim);
 void my_strReplace(char *str, char *key, char *value, char* keyStart);
+void my_strLowerCase(char *str);
 
 
 char toLowerCase(char ch);

@@ -93,6 +93,16 @@ char toLowerCase(char ch) {
     return ch;
 }
 
+void my_strLowerCase(char *str) {
+    int i = 0;
+    while(str[i] != '\0') {
+        if(str[i] >= 'A' && str[i] <= 'Z') {
+            str[i] += 'a' - 'A';
+        }
+        i++;
+    }
+}
+
 int is_palindrome(const char *s) {
     size_t i = 0, j = my_strlen(s) - 1;
     while(i < j) {
@@ -147,7 +157,11 @@ void normalizeSpace(char *str) {
         prev = str[i++];
         
     }
+    if(str[j-1] == ' '){
+        j--;
+    }
     str[j] = '\0';
+    size_t len = my_strlen(str);
 }
 
 char* my_strcasestr(const char *haystack, const char *needle) {
@@ -191,8 +205,7 @@ char* my_strtok(char *str, const char *delim) {
 
 void templateReplacer(char *str, struct keyValue replacement) {
     char placeholderStart[] = "{{";
-    char placeholderEnd[] = "}}";
-
+    char placeholderEnd[] = "}}"; 
     char keyBuffer[100];
     keyBuffer[0] = '\0';
     my_strcat(keyBuffer, placeholderStart);

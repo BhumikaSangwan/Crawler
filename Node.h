@@ -1,12 +1,12 @@
 #ifndef NODE_H
 #define NODE_H
 
-template <typename T, typename K>
+template <typename K, typename T>
 class Node {
     public:
     T data;
     K key;
-    Node<T, K>* next;
+    Node<K, T>* next;
 
     Node(K key, T val) : data(val), key(key), next(nullptr) {}
 };

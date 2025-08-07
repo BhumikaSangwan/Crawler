@@ -182,3 +182,8 @@ Node<T, K> *LinkedList<T, K>::search(K key)
     }
     return nullptr;
 }
+
+template <typename T, typename K>
+Node<T, K>* LinkedList<T, K> :: getHead() {
+    return head;
+}
