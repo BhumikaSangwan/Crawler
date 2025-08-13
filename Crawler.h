@@ -15,6 +15,7 @@ private:
     int currLinkCount;
     LinkedList<char *, char *> *urlList;
     Hash<char *, char *> *urlHash;
+    Hash<char *, char *> *keywordHash;
 
 public:
     Crawler();
@@ -22,6 +23,8 @@ public:
     Crawler(const Crawler &cr);
     ~Crawler();
 
+    size_t getDomainLen(char *url);
+    bool isSpecialChar(char ch);
     void generateFileName(char *filename, int len);
     void insertUrl(char *url, char *filepath);
     void getUrl(char *url, int len, int currDepth, char *parentUrl);
@@ -34,6 +37,7 @@ public:
     void printHashedUrls();
     bool isValidWord(char *word);
     char *getWord(char *&searchPos);
+    void logKeywords();
     char *getKeyword(char *filepath, char *url);
     void findKeywords();
     void crawl(char *url, int currDepth);

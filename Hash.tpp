@@ -82,28 +82,25 @@ void Hash<K, T>::resizeTable()
             while (currNode != nullptr)
             {
                 int idx = getHashIdx(currNode->key);
-                insert(currNode->key, currNode->data);
-                // Node<K, T> *nextNode = newTable[idx];
-                // newTable[idx] = currNode;
-                // newTable[idx]->next = nextNode;
-
+                insertAll(currNode->key, currNode->data);
+                Node<K, T> *temp = currNode;
                 currNode = currNode->next;
+                delete temp;
             }
         }
     }
 
-    for (int i = 0; i < prevSize; i++)
-    {
-        Node<K, T>* curr = prevTable[i];
-        while (curr != nullptr)
-        {
-            Node<K, T>* next = curr->next;
-            delete curr;
-            curr = next;
-        }
-    }
+    // for (int i = 0; i < prevSize; i++)
+    // {
+    //     Node<K, T>* curr = prevTable[i];
+    //     while (curr != nullptr)
+    //     {
+    //         Node<K, T>* next = curr->next;
+    //         delete curr;
+    //         curr = next;
+    //     }
+    // }
     delete[] prevTable;
-    // deallocateTable();
 }
 
 template <typename K, typename T>
@@ -174,7 +171,7 @@ void Hash<K, T>::insert(K key, T val)
         Node<K, T> *curr = table[idx];
         while (curr != nullptr)
         {
-            if (curr->key == key)
+            if (curr->key == key || my_strcmp(curr->key, key) == 0)
             {
                 return;
             }
@@ -193,29 +190,58 @@ void Hash<K, T>::insert(K key, T val)
 }
 
 template <typename K, typename T>
-int Hash<K, T> :: insert(K key) {
-    if(key == nullptr) {
+void Hash<K, T> ::insertAll(K key, T val) {
+    int idx = getHashIdx(key);
+
+    if (table[idx] == nullptr)
+    {
+        table[idx] = new Node<K, T>(key, val);
+    }
+    else
+    {
+        Node<K, T> *newNode = new Node<K, T>(key, val);
+        newNode->next = table[idx];
+        table[idx] = newNode;
+    }
+
+    insertedCount++;
+    if (allowResize && insertedCount > threshold)
+    {
+        resizeTable();
+    }
+}
+
+template <typename K, typename T>
+int Hash<K, T>::insert(K key)
+{
+    if (key == nullptr)
+    {
         return 0;
     }
     normalizeSpace(key);
-    if(key == nullptr) {
+    if (key == nullptr)
+    {
         return 0;
     }
     int idx = getHashIdx(key);
-    if (table[idx] == nullptr) {
+    if (table[idx] == nullptr)
+    {
         table[idx] = new Node<K, T>(key, 1);
         return 1;
     }
-    else {
-        Node<K, T>* curr = table[idx];
-        while (curr != nullptr) {
-            if (my_strcmp(curr->key, key) == 0) {
+    else
+    {
+        Node<K, T> *curr = table[idx];
+        while (curr != nullptr)
+        {
+            if (my_strcmp(curr->key, key) == 0)
+            {
                 curr->data += 1;
                 return curr->data;
             }
             curr = curr->next;
         }
-        Node<K, T>* newNode = new Node<K, T>(key, 1);
+        Node<K, T> *newNode = new Node<K, T>(key, 1);
         newNode->next = table[idx];
         table[idx] = newNode;
         return newNode->data;
@@ -260,14 +286,14 @@ void Hash<K, T>::remove(K key)
 }
 
 template <typename K, typename T>
-Node<K, T>* Hash<K, T>::search(K key)
+Node<K, T> *Hash<K, T>::search(K key)
 {
     int idx = getHashIdx(key);
 
-    Node<K, T>* currNode = table[idx];
+    Node<K, T> *currNode = table[idx];
     while (currNode != nullptr)
     {
-        if constexpr (std::is_same<K, char*>::value)
+        if constexpr (std::is_same<K, char *>::value)
         {
             if (my_strcmp(currNode->key, key) == 0)
             {
@@ -284,25 +310,37 @@ Node<K, T>* Hash<K, T>::search(K key)
         currNode = currNode->next;
     }
 
-    cout << endl << endl;
     return nullptr;
 }
 
+template <typename K, typename T>
+int Hash<K, T>::getSize()
+{
+    return size;
+}
+
+template <typename K, typename T>
+Node<K, T> **Hash<K, T>::getTable()
+{
+    return table;
+}
 
 template <typename K, typename T>
 void Hash<K, T>::display()
 {
     for (int i = 0; i < size; i++)
     {
-        Node<K, T> *currNode = table[i]; 
+        Node<K, T> *currNode = table[i];
         cout << i << " : " << endl;
         while (currNode != nullptr)
         {
             cout << currNode->data << " , key : ";
-            if(currNode->key != nullptr) {
+            if (currNode->key != nullptr)
+            {
                 cout << currNode->key;
             }
-            else {
+            else
+            {
                 cout << "NULL";
             }
             cout << endl;

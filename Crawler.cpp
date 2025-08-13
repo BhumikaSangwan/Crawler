@@ -20,42 +20,52 @@ Crawler ::Crawler()
     linkCount = 20;
     currLinkCount = 0;
     urlHash = new Hash<char *, char *>;
+    keywordHash = new Hash<char *, char *>;
 }
 Crawler ::Crawler(char *url, char *targetDir, int depth = 5, int linkCount = 20)
 {
-    this->url = url;
-    this->targetDir = targetDir;
+    this->url = new char[my_strlen(url) + 1];
+    my_strcpy(this->url, url);
+
+    this->targetDir = new char[my_strlen(targetDir) + 1];
+    my_strcpy(this->targetDir, targetDir);
     this->depth = depth;
     duplicateCount = 0;
     this->linkCount = linkCount;
     currLinkCount = 0;
     urlList = nullptr;
     urlHash = new Hash<char *, char *>;
+    keywordHash = new Hash<char *, char *>;
 }
 
 Crawler ::Crawler(const Crawler &cr)
 {
-    this->url = cr.url;
-    this->targetDir = cr.targetDir;
+    this->url = new char[my_strlen(cr.url) + 1];
+    my_strcpy(this->url, cr.url);
+
+    this->targetDir = new char[my_strlen(cr.targetDir) + 1];
+    my_strcpy(this->targetDir, cr.targetDir);
     this->depth = cr.depth;
     this->duplicateCount = cr.duplicateCount;
     this->linkCount = cr.linkCount;
     this->currLinkCount = cr.currLinkCount;
     this->urlList = cr.urlList;
     this->urlHash = cr.urlHash;
+    this->keywordHash = cr.keywordHash;
 }
 
 Crawler ::~Crawler()
 {
-    delete url;
-    delete targetDir;
-    delete urlList;
+    delete[] url;
+    delete[] targetDir;
     delete urlHash;
+    delete keywordHash;
+    delete urlList;
 }
 
 void Crawler ::crawl(char *url, int currDepth = 1)
 {
-    if (depth == 0 || currDepth > depth || currLinkCount >= linkCount)
+    if (depth == 0 || currDepth >= depth || currLinkCount >= linkCount)
     {
         return;
     }
@@ -80,12 +90,11 @@ void Crawler ::crawl(char *url, int currDepth = 1)
 
     char filename[MAX_LEN];
     filename[0] = '\0';
-    generateFileName(filename, 12 % 95);
-
+    generateFileName(filename, 12 % (MAX_LEN - 5));
     if (isValidUrl(url) == 0)
     {
-        cout << currLinkCount << " " << url << endl;
         currLinkCount++;
+        cout << currLinkCount << " Crawling (depth: " << currDepth << ") : " << " " << url << endl;
         char filepath[MAX_LEN];
         filepath[0] = '\0';
         my_strcat(filepath, targetDir);
@@ -104,13 +113,16 @@ void Crawler ::crawl(char *url, int currDepth = 1)
         insertUrl(url, filepath);
         extractUrls(filepath, currDepth, url);
     }
+    else
+    {
+        cout << "Invalid URL: " << url << endl;
+    }
 }
 
 void Crawler ::checkDir()
 {
     if (!fs::exists(targetDir))
     {
-        cout << "directory doesn't exist : " << targetDir << endl;
         if (fs::create_directories(targetDir))
         {
             cout << "created directory : " << targetDir << endl;
@@ -156,10 +168,22 @@ void Crawler ::extractUrls(char *filepath, int currDepth, char *parentUrl)
         return;
     }
     char *searchPos = buffer;
-    char *ahref = nullptr;
-    while ((ahref = my_strcasestr(searchPos, "<a href=\"")) != nullptr)
+    char *aTag = nullptr;
+    while ((aTag = my_strcasestr(searchPos, "<a ")) != nullptr)
     {
-        char *quoteStart = my_strstr(ahref, "\"");
+        char *href = my_strcasestr(aTag, "href=");
+        if (href == nullptr)
+        {
+            searchPos = aTag + 4;
+            continue;
+        }
+        char *aEnd = my_strcasestr(aTag, "</a>");
+        if (aEnd == nullptr || aEnd < href)
+        {
+            searchPos = aEnd + 4;
+            continue;
+        }
+        char *quoteStart = my_strstr(href, "\"");
         if (quoteStart == nullptr)
             break;
 
@@ -172,14 +196,14 @@ void Crawler ::extractUrls(char *filepath, int currDepth, char *parentUrl)
             len = MAX_LEN - 1;
         if (len == 1)
         {
-            searchPos = quoteEnd + 1;
+            searchPos = quoteEnd + 4;
             continue;
         }
         getUrl(quoteStart, len, currDepth, parentUrl);
 
-        searchPos = quoteEnd + 1;
+        searchPos = quoteEnd + 4;
     }
-    delete buffer;
+    delete[] buffer;
 }
 
 void Crawler ::getUrl(char *quoteStart, int len, int currDepth, char *parentUrl)
@@ -192,9 +216,16 @@ void Crawler ::getUrl(char *quoteStart, int len, int currDepth, char *parentUrl)
     }
     size_t i = 0;
     size_t j = 0;
-    if (parentUrl != nullptr && quoteStart[1] == '/')
+    if (parentUrl != nullptr)
     {
-        j = my_strlen(parentUrl);
+        if (quoteStart[1] == '/')
+        {
+            j = getDomainLen(parentUrl);
+        }
+        if (j > MAX_LEN)
+        {
+            j = MAX_LEN - 1;
+        }
 
         while (i < j)
         {
@@ -206,21 +237,20 @@ void Crawler ::getUrl(char *quoteStart, int len, int currDepth, char *parentUrl)
             len = MAX_LEN - i - 1;
         }
         size_t k = 0;
-        if (url[i - 1] == '/')
-        {
-            if (quoteStart[1] == '/')
-            {
-                j--;
-                k++;
-            }
-        }
         while (i < len + j)
         {
             url[i] = quoteStart[k + 1];
             i++;
             k++;
         }
-        url[len + j] = '\0';
+        if (len + j > MAX_LEN)
+        {
+            url[MAX_LEN - 1] = '\0';
+        }
+        else
+        {
+            url[len + j] = '\0';
+        }
     }
     else
     {
@@ -232,7 +262,7 @@ void Crawler ::getUrl(char *quoteStart, int len, int currDepth, char *parentUrl)
         url[i] = '\0';
     }
 
-    if (currDepth < depth - 1)
+    if (currDepth < depth)
     {
         crawl(url, currDepth + 1);
     }
@@ -263,6 +293,11 @@ void Crawler ::hashUrl(char *url, char *filepath)
 
 void Crawler ::printUrls()
 {
+    if (urlList == nullptr)
+    {
+        cout << "No URLs to print." << endl;
+        return;
+    }
     urlList->print();
 }
 
@@ -273,8 +308,14 @@ void Crawler ::printHashedUrls()
 
 bool Crawler ::isHtml(char *url)
 {
-    const char *extensions[] = {".jpeg", ".jpg", ".png", ".img", ".svg", ".mp4", ".mp3", ".css", ".js", ".gif"};
-    for (int i = 0; i < 10; i++)
+    const char *extensions[] = {
+        ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+        ".zip", ".rar", ".tar", ".gz", ".exe", ".dmg",
+        ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg", ".webp",
+        ".mp3", ".mp4", ".avi", ".mov", ".wmv", ".flv",
+        ".css", ".js", ".xml", ".json", ".txt"};
+    int extCount = sizeof(extensions) / sizeof(extensions[0]);
+    for (int i = 0; i < extCount; i++)
     {
         if (my_strcasestr(url, extensions[i]) != nullptr)
         {
@@ -291,8 +332,95 @@ void Crawler ::findKeywords()
     while (head != nullptr)
     {
         char *keyword = getKeyword(head->data, head->key);
-        cout << "Url : " << head->key << " , keyword : " << keyword << endl;
+            cout << "Url : " << head->key << " , keyword : " << keyword << endl;
+            keywordHash->insertAll(keyword, head->key);
         head = head->next;
+    }
+    keywordHash->display();
+    logKeywords();
+}
+
+
+void Crawler ::logKeywords()
+{
+    int size = keywordHash->getSize();
+    Node<char *, char *> **table = keywordHash->getTable();
+    for (int i = 0; i < size; i++)
+    {
+        Node<char *, char *> *head = table[i];
+        if (head == nullptr)
+        {
+            continue;
+        }
+        Node<char *, char *> *curr = nullptr;
+        Node<char *, char *> *prev = nullptr;
+        char *keyword = head->key;
+        size_t urlLineLen = 1000;
+        size_t currLen = 0;
+        char *keywordUrlLine = new char[urlLineLen];
+        keywordUrlLine[0] = '\0';
+
+        bool urlPresent = false;
+
+        while (head != nullptr)
+        {
+            if (curr == nullptr)
+            {
+                keyword = head->key;
+                curr = head;
+                if (keywordUrlLine[0] != '\0')
+                {
+                    appendKeywordLogs(keywordUrlLine);
+                }
+                keywordUrlLine[0] = '\0';
+                my_strcat(keywordUrlLine, keyword);
+                my_strcat(keywordUrlLine, " -> ");
+                currLen = my_strlen(keywordUrlLine);
+                urlPresent = false;
+            }
+            if (my_strcmp(keyword, curr->key) == 0)
+            {
+                if (urlPresent)
+                {
+                    my_strcat(keywordUrlLine, ", ");
+                }
+                if (currLen + my_strlen(curr->data) + 1 >= urlLineLen)
+                {
+                    urlLineLen *= 2;
+                    char *temp = new char[urlLineLen];
+                    my_strcpy(temp, keywordUrlLine);
+                    delete[] keywordUrlLine;
+                    keywordUrlLine = temp;
+                }
+                my_strcat(keywordUrlLine, curr->data);
+                visitedLog(curr->data);
+                urlPresent = true;
+                Node<char *, char *> *temp = curr;
+                if (curr == head)
+                {
+                    head = head->next;
+                }
+                else
+                {
+                    if (prev != nullptr)
+                    {
+                        prev->next = curr->next;
+                    }
+                }
+                curr = curr->next;
+                delete temp;
+            }
+            else
+            {
+                prev = curr;
+                curr = curr->next;
+            }
+        }
+        if (keywordUrlLine[0] != '\0')
+        {
+            appendKeywordLogs(keywordUrlLine);
+        }
+        delete[] keywordUrlLine;
     }
 }
 
@@ -300,24 +428,28 @@ char *Crawler ::getKeyword(char *filepath, char *url)
 {
     char *buffer = readFile(filepath);
     char *searchPos = buffer;
-    char *tempKeyword;
+    if (searchPos == nullptr)
+    {
+        cout << "searchPos is null for url : " << url << endl;
+        return nullptr;
+    }
+    char *tempKeyword = nullptr;
     int keywordCount = 0;
     Hash<char *, int> *keywordHash = new Hash<char *, int>;
     while (searchPos != nullptr)
     {
-        while (*searchPos == ' ' || *searchPos == '\n' || *searchPos == '\t' ||
-               *searchPos == ';' || *searchPos == ',' || *searchPos == '.' ||
-               *searchPos == ':' || *searchPos == '|')
+        while (isSpecialChar(*searchPos))
         {
             searchPos++;
         }
         char *word = getWord(searchPos);
         if (word == nullptr)
         {
-            break;
+            searchPos++;
+            continue;
         }
         normalizeSpace(word);
-        if (word == nullptr || word[0] == '\0' || my_strlen(word) == 0)
+        if (word == nullptr || word[0] == '\0' || my_strlen(word) < 2)
         {
             delete[] word;
             continue;
@@ -325,12 +457,15 @@ char *Crawler ::getKeyword(char *filepath, char *url)
         size_t wordLen = my_strlen(word);
         size_t i = 0;
         size_t j = 0;
-        for(i = 0; i <= wordLen; i++) {
-            if (my_strcmp(word + i, " ") == 0 || word[i] == '\t' || word[i] == '\n') {
+        for (i = 0; i <= wordLen; i++)
+        {
+            if (my_strcmp(word + i, " ") == 0 || word[i] == '\t' || word[i] == '\n')
+            {
                 j++;
             }
         }
-        if (j == wordLen) {
+        if (j == wordLen)
+        {
             delete[] word;
             continue;
         }
@@ -360,7 +495,11 @@ char *Crawler ::getKeyword(char *filepath, char *url)
             break;
         }
     }
-    // keywordHash->display();
+    if (tempKeyword == nullptr)
+    {
+        delete keywordHash;
+        return nullptr;
+    }
     size_t keywordLen = my_strlen(tempKeyword);
     char *keyword = new char[keywordLen + 1];
     keyword[0] = '\0';
@@ -374,9 +513,7 @@ char *Crawler ::getWord(char *&searchPos)
 {
     while (*searchPos != '\0')
     {
-        while (*searchPos == ' ' || *searchPos == '\n' || *searchPos == '\t' ||
-               *searchPos == ';' || *searchPos == ',' || *searchPos == '.' ||
-               *searchPos == ':' || *searchPos == '|' || *searchPos == '{' || *searchPos == '}')
+        while (isSpecialChar(*searchPos))
         {
             searchPos++;
         }
@@ -393,34 +530,44 @@ char *Crawler ::getWord(char *&searchPos)
                 searchPos++;
             }
             size_t len = searchPos - start;
-            char *word = new char[len + 1];
+            char *word = new char[len + 2];
             size_t i = 0;
-            while (i < len)
+            while (i <= len)
             {
                 word[i] = start[i];
                 i++;
             }
-            word[len] = '\0';
-            if (my_strcmp(word, "<script>") == 0)
+            word[len + 1] = '\0';
+            if ( my_strcmp(word, "<script>") == 0 || my_strncmp(word, "<script", 7) == 0)
             {
-                char *newStart = my_strcasestr(searchPos, "</script>");
-                if (newStart != nullptr)
+                char *scriptEnd = my_strcasestr(searchPos, "</script>");
+                if (scriptEnd != nullptr)
                 {
-                    searchPos = newStart + 9;
+                    searchPos = scriptEnd + 9;
+                }
+                else
+                {
+                    searchPos += 8;
                 }
                 delete[] word;
                 continue;
             }
-            if (my_strcmp(word, "<style>") == 0)
+            char *styleAdd = my_strcasestr(searchPos, "<style>");
+            if (my_strcmp(word, "<style>") == 0 || my_strncmp(word, "<style", 6) == 0)
             {
-                char *newStart = my_strcasestr(searchPos, "</style>");
-                if (newStart != nullptr)
+                char *styleEnd = my_strcasestr(searchPos, "</style>");
+                if (styleEnd != nullptr)
                 {
-                    searchPos = newStart + 8;
+                    searchPos = styleEnd + 8;
+                }
+                else
+                {
+                    searchPos += 7;
                 }
                 delete[] word;
                 continue;
             }
+            delete[] word;
             if (*searchPos == '>')
                 searchPos++;
             else
@@ -430,7 +577,7 @@ char *Crawler ::getWord(char *&searchPos)
         else
         {
             char *end = searchPos + 1;
-            while (*end != '\0' && *end != ' ' && *end != '\n' && *end != '\t' && *end != ';' && *end != ',' && *end != '.' && *end != ':' && *end != '<')
+            while (*end != '\0' && *end != '>' && *end != '<' && !isSpecialChar(*end))
             {
                 end++;
             }
@@ -455,44 +602,213 @@ char *Crawler ::getWord(char *&searchPos)
     return nullptr;
 }
 
+bool Crawler ::isSpecialChar(char ch)
+{
+    if (ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == '\"' || ch == '\'' || ch == ' ' || ch == '\n' || ch == '\t' || ch == ';' || ch == ',' || ch == '.' || ch == ':' || ch == '-' || ch == '_' || ch == '/' || ch == '@' || ch == '#' || ch == '&' || ch == '!' || ch == '=' || ch == '?' || ch == '%')
+    {
+        return true;
+    }
+    return false;
+}
 
 bool Crawler ::isValidWord(char *word)
 {
-    const char *stopwords[] = {
-        // Articles
-        "the", "a", "an",
+    const char *stopWords[] = {
+        "hour",
+        "deg",
+        "amp",
+        "nbsp",
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "by",
+        "for",
+        "from",
+        "has",
+        "he",
+        "in",
+        "is",
+        "it",
+        "its",
+        "of",
+        "on",
+        "that",
+        "the",
+        "to",
+        "was",
+        "will",
+        "with",
+        "would",
+        "you",
+        "your",
+        "have",
+        "had",
+        "this",
+        "these",
+        "they",
+        "them",
+        "their",
+        "there",
+        "then",
+        "than",
+        "or",
+        "but",
+        "not",
+        "can",
+        "could",
+        "should",
+        "would",
+        "may",
+        "might",
+        "must",
+        "shall",
+        "will",
+        "do",
+        "does",
+        "did",
+        "done",
+        "been",
+        "being",
+        "about",
+        "after",
+        "all",
+        "also",
+        "any",
+        "because",
+        "before",
+        "both",
+        "but",
+        "each",
+        "even",
+        "first",
+        "her",
+        "here",
+        "him",
+        "his",
+        "how",
+        "if",
+        "into",
+        "just",
+        "like",
+        "make",
+        "many",
+        "me",
+        "more",
+        "most",
+        "my",
+        "new",
+        "no",
+        "now",
+        "only",
+        "other",
+        "our",
+        "out",
+        "over",
+        "said",
+        "same",
+        "see",
+        "she",
+        "so",
+        "some",
+        "such",
+        "take",
+        "ist",
+        "time",
+        "two",
+        "up",
+        "use",
+        "very",
+        "way",
+        "we",
+        "well",
+        "were",
+        "what",
+        "when",
+        "where",
+        "which",
+        "who",
+        "why",
+        "work",
+        "page",
+        "home",
+        "contact",
+        "about",
+        "services",
+        "products",
+        "news",
+        "blog",
+        "login",
+        "register",
+        "search",
+        "help",
+        "support",
+        "privacy",
+        "terms",
+        "policy",
+        "www",
+        "quot",
+        "http",
+        "https",
+        "com",
+        "org",
+        "net",
+        "edu",
+        "gov",
+        "io",
+        "co",
+        "uk",
+        "us",
+        "info",
+        "site",
+        "online",
+        "web",
+        "page",
+        "html",
+        "www",
+        "www.",
+        "http://",
+        "https://",
+    };
 
-        // Coordinating conjunctions
-        "and", "but", "or", "nor", "for", "so", "yet",
-
-        // Subordinating conjunctions
-        "although", "because", "since", "unless", "while", "whereas", "if", "when", "after", "before", "until",
-
-        // Prepositions
-        "in", "on", "at", "by", "with", "about", "against", "among", "around", "as", "before", "behind",
-        "beneath", "beside", "between", "beyond", "during", "except", "for", "from", "inside", "into",
-        "near", "of", "off", "out", "over", "through", "to", "toward", "under", "up", "upon", "within", "without",
-
-        // Auxiliary (helping) verbs
-        "is", "am", "are", "was", "were", "be", "being", "been", "do", "does", "did",
-        "have", "has", "had", "will", "would", "shall", "should", "can", "could", "may", "might", "must",
-
-        // Pronouns (common)
-        "i", "you", "he", "she", "it", "we", "they",
-        "me", "him", "her", "us", "them",
-        "my", "your", "his", "her", "its", "our", "their",
-        "mine", "yours", "hers", "ours", "theirs",
-
-        // Determiners / Others
-        "this", "that", "these", "those", "some", "any", "each", "every", "few", "many", "much", "all", "none"};
-
-    int len = sizeof(stopwords) / sizeof(stopwords[0]);
+    int len = sizeof(stopWords) / sizeof(stopWords[0]);
     for (int i = 0; i < len; i++)
     {
-        if (my_strcmp(word, stopwords[i]) == 0)
+        if (my_strcmp(word, stopWords[i]) == 0)
         {
             return false;
         }
     }
-    return true;
+    bool ch = false;
+    for (int i = 0; i < my_strlen(word); i++)
+    {
+        if (!(word[i] >= '0' && word[i] <= '9'))
+        {
+            ch = true;
+            break;
+        }
+    }
+    return ch;
+}
+
+size_t Crawler ::getDomainLen(char *url)
+{
+    size_t len = 0;
+    if (my_strncmp(url, "http://", 7) == 0)
+    {
+        len = 7;
+    }
+    else if (my_strncmp(url, "https://", 8) == 0)
+    {
+        len = 8;
+    }
+    len++;
+    while (url[len] != '\0' && url[len] != '/')
+    {
+        len++;
+    }
+    return len;
 }

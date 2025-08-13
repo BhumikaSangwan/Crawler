@@ -23,8 +23,11 @@ class Hash {
         Hash(int size);
         Hash(const Hash<K, T>& obj);
         ~Hash();
+        int getSize();
+        Node<K, T>** getTable();
         void insert(K key, T val);
         int insert(K key);
+        void insertAll(K key, T val);
         void remove(K key);
         Node<K, T>* search(K key);
         void display();
